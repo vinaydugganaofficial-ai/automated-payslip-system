@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -51,9 +52,19 @@ type Employee struct {
 
 // NetPayInWords converts the NetPay to words.
 func (e *Employee) NetPayInWords() string {
-	val := int(e.NetPay)
-	words := convertNumberToWords(val)
-	return fmt.Sprintf("RUPEES %s ONLY", strings.ToUpper(words))
+	intPart := int(e.NetPay)
+	fracPart := int(math.Round((e.NetPay - float64(intPart)) * 100))
+
+	words := convertNumberToWords(intPart)
+	out := fmt.Sprintf("RUPEES %s", strings.ToUpper(words))
+
+	if fracPart > 0 {
+		paiseWords := convertNumberToWords(fracPart)
+		out += fmt.Sprintf(" AND %s PAISE", strings.ToUpper(paiseWords))
+	}
+
+	out += " ONLY"
+	return out
 }
 
 var (

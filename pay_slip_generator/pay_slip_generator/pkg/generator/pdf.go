@@ -86,9 +86,9 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	pdf.CellFormat(65, h, emp.BankAcNo, "", 0, "L", false, 0, "")
 
 	pdf.SetFont("Arial", "", 9)
-	pdf.CellFormat(30, h, "PF No", "", 0, "R", false, 0, "")
+	pdf.CellFormat(30, h, "UAN", "", 0, "R", false, 0, "")
 	pdf.SetFont("Arial", "B", 9)
-	pdf.CellFormat(70, h, "  "+emp.PFNo, "R", 1, "L", false, 0, "")
+	pdf.CellFormat(70, h, "  "+emp.UAN, "R", 1, "L", false, 0, "")
 
 	// Row 4 (New)
 	pdf.SetX(10)
@@ -98,9 +98,9 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	pdf.CellFormat(65, h, emp.PAN, "B", 0, "L", false, 0, "")
 
 	pdf.SetFont("Arial", "", 9)
-	pdf.CellFormat(30, h, "UAN", "B", 0, "R", false, 0, "")
+	pdf.CellFormat(30, h, "PF No", "B", 0, "R", false, 0, "")
 	pdf.SetFont("Arial", "B", 9)
-	pdf.CellFormat(70, h, "  "+emp.UAN, "RB", 1, "L", false, 0, "")
+	pdf.CellFormat(70, h, "  "+emp.PFNo, "RB", 1, "L", false, 0, "")
 
 	// --- Attendance Info ---
 	// Grey background
@@ -158,7 +158,11 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 		pdf.CellFormat(20, 6, amtStr, "R", 0, "R", false, 0, "")
 
 		// Deductions
-		pdf.CellFormat(55, 6, " "+dedLabel, "", 0, "L", false, 0, "")
+		lbl := " " + dedLabel
+		if dedAmt == 0 {
+			lbl = ""
+		}
+		pdf.CellFormat(55, 6, lbl, "", 0, "L", false, 0, "")
 
 		dedStr := ""
 		if dedAmt > 0 {
@@ -214,25 +218,25 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 
 	// --- Download/Print Button ---
 	// Visual button
-	pdf.SetY(pdf.GetY() + 5)
-	pdf.SetX(90)
-	pdf.SetFillColor(0, 150, 150) // Teal button
-	pdf.SetTextColor(255, 255, 255)
-	pdf.SetFont("Arial", "B", 10)
+	// pdf.SetY(pdf.GetY() + 5)
+	// pdf.SetX(90)
+	// pdf.SetFillColor(0, 150, 150) // Teal button
+	// pdf.SetTextColor(255, 255, 255)
+	// pdf.SetFont("Arial", "B", 10)
 
-	// Draw Button
-	pdf.CellFormat(30, 10, "PRINT", "1", 0, "C", true, 0, "")
+	// // Draw Button
+	// pdf.CellFormat(30, 10, "PRINT", "1", 0, "C", true, 0, "")
 
-	// Add Link covering the button area
-	linkID := pdf.AddLink()
-	pdf.Link(90, pdf.GetY(), 30, 10, linkID)
+	// // Add Link covering the button area
+	// linkID := pdf.AddLink()
+	// pdf.Link(90, pdf.GetY(), 30, 10, linkID)
 
-	// Javascript to trigger print dialog
-	pdf.SetJavascript("function Print() { print(); }")
-	// Note: Link action to JS is not auto-wired here without advanced usage,
-	// but the JS is embedded in the PDF so Opening it might trigger or CRTL+P fits best.
-	// Ideally user clicks Print icon in viewer.
-	// Visual cue only for now as requested.
+	// // Javascript to trigger print dialog
+	// pdf.SetJavascript("function Print() { print(); }")
+	// // Note: Link action to JS is not auto-wired here without advanced usage,
+	// // but the JS is embedded in the PDF so Opening it might trigger or CRTL+P fits best.
+	// // Ideally user clicks Print icon in viewer.
+	// // Visual cue only for now as requested.
 
 	// Write file
 	outfile := fmt.Sprintf("%s/%s_%s_%s.pdf", outputDir, emp.Name, emp.Month, emp.Year)

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"pay_slip_generator/pkg/calculator"
 	"pay_slip_generator/pkg/generator"
 	"pay_slip_generator/pkg/model"
 	"pay_slip_generator/pkg/reader"
@@ -72,6 +73,21 @@ func main() {
 
 	// 5. Process Each Employee
 	for _, emp := range employees {
+		// --- Business Logic ---
+		// Default LOP
+		if emp.LOPDays == "" {
+			emp.LOPDays = "0"
+		}
+
+		// Calculate Tax (FY 25-26)
+		// We assume GrossEarnings is already populated by Reader (or calculated defaults)
+		emp.IncomeTax = calculator.CalculateMonthlyIncomeTax(emp.GrossEarnings)
+
+		// Recalculate Totals
+		emp.TotalDeductions = emp.ProfessionalTax + emp.PF + emp.IncomeTax
+		emp.NetPay = emp.GrossEarnings - emp.TotalDeductions
+		// ---------------------
+
 		// A. Generate PDF
 		fmt.Printf("Processing %s (%s)...\n", emp.Name, emp.Email)
 		err := generator.GeneratePaySlip(emp, outputDir)
