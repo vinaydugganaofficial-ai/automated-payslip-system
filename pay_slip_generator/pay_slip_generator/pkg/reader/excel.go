@@ -79,6 +79,8 @@ func ReadEmployees(filePath string) ([]model.Employee, error) {
 			DOJ:         getVal(row, "DOJ", "Date of Joining", "Joining Date"),
 			Gender:      getVal(row, "Gender", "Sex"),
 			PAN:         getVal(row, "PAN", "PAN Number"),
+			UAN:         getVal(row, "UAN", "UAN Number", "Universal Account Number"),
+			PFNo:        getVal(row, "PF No", "PF Number", "PF Account No", "PF Account"),
 
 			StandardDays: getVal(row, "Standard Days", "Std Days", "Total Days"),
 			PayableDays:  getVal(row, "Payable Days", "Paid Days"),
