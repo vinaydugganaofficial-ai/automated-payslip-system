@@ -78,17 +78,29 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	pdf.SetFont("Arial", "B", 9)
 	pdf.CellFormat(70, h, "  "+emp.Gender, "R", 1, "L", false, 0, "")
 
-	// Row 3 (Bottom border for first block)
+	// Row 3 (Bottom border for first block removed to merge with next)
 	pdf.SetX(10)
 	pdf.SetFont("Arial", "", 9)
-	pdf.CellFormat(25, h, " Bank Ac. No.", "LB", 0, "L", false, 0, "")
+	pdf.CellFormat(25, h, " Bank Ac. No.", "L", 0, "L", false, 0, "")
 	pdf.SetFont("Arial", "B", 9)
-	pdf.CellFormat(65, h, emp.BankAcNo, "B", 0, "L", false, 0, "")
+	pdf.CellFormat(65, h, emp.BankAcNo, "", 0, "L", false, 0, "")
 
 	pdf.SetFont("Arial", "", 9)
-	pdf.CellFormat(30, h, "PAN", "B", 0, "R", false, 0, "")
+	pdf.CellFormat(30, h, "PF No", "", 0, "R", false, 0, "")
 	pdf.SetFont("Arial", "B", 9)
-	pdf.CellFormat(70, h, "  "+emp.PAN, "RB", 1, "L", false, 0, "")
+	pdf.CellFormat(70, h, "  "+emp.PFNo, "R", 1, "L", false, 0, "")
+
+	// Row 4 (New)
+	pdf.SetX(10)
+	pdf.SetFont("Arial", "", 9)
+	pdf.CellFormat(25, h, " PAN", "LB", 0, "L", false, 0, "")
+	pdf.SetFont("Arial", "B", 9)
+	pdf.CellFormat(65, h, emp.PAN, "B", 0, "L", false, 0, "")
+
+	pdf.SetFont("Arial", "", 9)
+	pdf.CellFormat(30, h, "UAN", "B", 0, "R", false, 0, "")
+	pdf.SetFont("Arial", "B", 9)
+	pdf.CellFormat(70, h, "  "+emp.UAN, "RB", 1, "L", false, 0, "")
 
 	// --- Attendance Info ---
 	// Grey background
@@ -158,7 +170,14 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	// Rows
 	drawRow("Basic Pay", emp.BasicPayRate, emp.BasicPayAmount, "Professional Tax", emp.ProfessionalTax)
 	drawRow("House Rent Allowance", emp.HRARate, emp.HRAAmount, "Provident Fund", emp.PF)
-	drawRow("Other Allowance", emp.OtherAllowanceRate, emp.OtherAllowanceAmount, "Income Tax", emp.IncomeTax)
+
+	itLabel := ""
+	itAmt := 0.0
+	if emp.IncomeTax > 0 {
+		itLabel = "Income Tax"
+		itAmt = emp.IncomeTax
+	}
+	drawRow("Other Allowance", emp.OtherAllowanceRate, emp.OtherAllowanceAmount, itLabel, itAmt)
 	// Empty rows
 	drawRow("", 0, 0, "", 0)
 	drawRow("", 0, 0, "", 0)

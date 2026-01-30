@@ -1,3 +1,3 @@
-Month,Year,Emp Name,Email,Designation,Bank Ac No,DOJ,Gender,PAN,Standard Days,Payable Days,LOP Days,Basic Pay Rate,HRA Rate,Other Allowance Rate,Basic Pay,HRA,Other Allowance,Professional Tax,PF,Income Tax,Gross Earnings,Total Deductions,Net Pay
-Dec,2024,Vinay,vinayopbr@gmail.com,Software Engineer,1234567890,2023-01-01,Male,ABCDE1234F,31,31,0,50000,20000,10000,50000,20000,10000,200,1800,1000,80000,3000,77000
-Dec,2028,wertyuiop[,vinayopbr@gmail.com,wertyuiop,1234567890,2023-01-01,Male,ABCDE1234F,31,31,0,5000099,20000,10000,50000,20000,10000,200,1800,1000,80000,3000,77000
+Month,Year,Emp Name,Email,Designation,Bank Ac No,DOJ,Gender,PAN,UAN,PF No,Standard Days,Payable Days,LOP Days,Basic Pay Rate,HRA Rate,Other Allowance Rate,Basic Pay,HRA,Other Allowance,Professional Tax,PF,Income Tax,Gross Earnings,Total Deductions,Net Pay
+Dec,2024,Vinay,vinayopbr@gmail.com,Software Engineer,1234567890,2023-01-01,Male,ABCDE1234F,100123456789,AP/HYD/12345/001,31,31,0,50000,20000,10000,50000,20000,10000,200,1800,1000,80000,3000,77000
+Dec,2028,wertyuiop[,pechetti.suryatrinadh@gmail.com,wertyuiop,1234567890,2023-01-01,Male,ABCDE1234F,100987654321,AP/HYD/98765/002,31,31,0,5000099,20000,10000,50000,20000,10000,200,1800,1000,80000,3000,77000

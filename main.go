@@ -31,7 +31,7 @@ func main() {
 
 	// 2. Setup Directories
 	// Check for CSV first, default to Excel
-	inputFile := "employees.xlsx"
+	inputFile := "employee_payslip_data_10_employees"
 	if _, err := os.Stat("employees.csv"); err == nil {
 		inputFile = "employees.csv"
 	}
