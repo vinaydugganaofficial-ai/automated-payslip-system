@@ -1,0 +1,21 @@
+# Secrets
+.env
+
+# Output
+output/
+*.pdf
+
+# Binaries
+*.exe
+*.dll
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+
+# Data (Optional - usually good to keep templates but ignore personal data)
+# employees.xlsx
+# employees.csv
