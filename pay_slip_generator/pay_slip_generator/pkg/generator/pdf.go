@@ -3,9 +3,21 @@ package generator
 import (
 	"fmt"
 	"pay_slip_generator/pkg/model"
+	"strconv"
+	"time"
 
 	"github.com/jung-kurt/gofpdf"
 )
+
+func getDaysInMonth(month, year string) int {
+	// Parse "Jan 2006"
+	t, err := time.Parse("Jan 2006", fmt.Sprintf("%s %s", month, year))
+	if err != nil {
+		return 30 // Default fallback
+	}
+	// Go to the first day of the next month, then subtract one day to get the last day of the current month
+	return t.AddDate(0, 1, 0).Add(-24 * time.Hour).Day()
+}
 
 // GeneratePaySlip creates a PDF pay slip for the given employee.
 func GeneratePaySlip(emp model.Employee, outputDir string) error {
@@ -62,7 +74,7 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	pdf.CellFormat(65, h, emp.Name, "", 0, "L", false, 0, "")
 
 	pdf.SetFont("Arial", "", 9)
-	pdf.CellFormat(30, h, "DOJ", "", 0, "R", false, 0, "")
+	pdf.CellFormat(30, h, " DOJ", "", 0, "L", false, 0, "")
 	pdf.SetFont("Arial", "B", 9)
 	pdf.CellFormat(70, h, "  "+emp.DOJ, "R", 1, "L", false, 0, "")
 
@@ -74,7 +86,7 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	pdf.CellFormat(65, h, emp.Designation, "", 0, "L", false, 0, "")
 
 	pdf.SetFont("Arial", "", 9)
-	pdf.CellFormat(30, h, "Gender", "", 0, "R", false, 0, "")
+	pdf.CellFormat(30, h, " Gender", "", 0, "L", false, 0, "")
 	pdf.SetFont("Arial", "B", 9)
 	pdf.CellFormat(70, h, "  "+emp.Gender, "R", 1, "L", false, 0, "")
 
@@ -86,7 +98,7 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	pdf.CellFormat(65, h, emp.BankAcNo, "", 0, "L", false, 0, "")
 
 	pdf.SetFont("Arial", "", 9)
-	pdf.CellFormat(30, h, "UAN", "", 0, "R", false, 0, "")
+	pdf.CellFormat(30, h, " UAN", "", 0, "L", false, 0, "")
 	pdf.SetFont("Arial", "B", 9)
 	pdf.CellFormat(70, h, "  "+emp.UAN, "R", 1, "L", false, 0, "")
 
@@ -98,7 +110,7 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	pdf.CellFormat(65, h, emp.PAN, "B", 0, "L", false, 0, "")
 
 	pdf.SetFont("Arial", "", 9)
-	pdf.CellFormat(30, h, "PF No", "B", 0, "R", false, 0, "")
+	pdf.CellFormat(30, h, " PF No", "B", 0, "L", false, 0, "")
 	pdf.SetFont("Arial", "B", 9)
 	pdf.CellFormat(70, h, "  "+emp.PFNo, "RB", 1, "L", false, 0, "")
 
@@ -107,7 +119,16 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	pdf.SetFillColor(230, 230, 230)
 	pdf.SetFont("Arial", "", 9)
 	pdf.SetX(10)
-	attendanceText := fmt.Sprintf("Standard Days: %s          Payable days: %s          Loss of Pay Days : %s", emp.StandardDays, emp.PayableDays, emp.LOPDays)
+
+	// Dynamic Days Calculation
+	stdDays := getDaysInMonth(emp.Month, emp.Year)
+	lopDays := 0.0
+	if val, err := strconv.ParseFloat(emp.LOPDays, 64); err == nil {
+		lopDays = val
+	}
+	payableDays := float64(stdDays) - lopDays
+
+	attendanceText := fmt.Sprintf("Standard Days: %d          Payable days: %.0f          Loss of Pay Days : %s", stdDays, payableDays, emp.LOPDays)
 	pdf.CellFormat(190, 7, attendanceText, "1", 1, "L", true, 0, "")
 
 	// --- Earnings & Deductions Tables ---
@@ -215,28 +236,6 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	pdf.SetX(10)
 	pdf.SetFont("Arial", "", 8)
 	pdf.CellFormat(190, 5, "** This is computer generated payslip and doesn't require signature and stamp", "", 1, "C", false, 0, "")
-
-	// --- Download/Print Button ---
-	// Visual button
-	// pdf.SetY(pdf.GetY() + 5)
-	// pdf.SetX(90)
-	// pdf.SetFillColor(0, 150, 150) // Teal button
-	// pdf.SetTextColor(255, 255, 255)
-	// pdf.SetFont("Arial", "B", 10)
-
-	// // Draw Button
-	// pdf.CellFormat(30, 10, "PRINT", "1", 0, "C", true, 0, "")
-
-	// // Add Link covering the button area
-	// linkID := pdf.AddLink()
-	// pdf.Link(90, pdf.GetY(), 30, 10, linkID)
-
-	// // Javascript to trigger print dialog
-	// pdf.SetJavascript("function Print() { print(); }")
-	// // Note: Link action to JS is not auto-wired here without advanced usage,
-	// // but the JS is embedded in the PDF so Opening it might trigger or CRTL+P fits best.
-	// // Ideally user clicks Print icon in viewer.
-	// // Visual cue only for now as requested.
 
 	// Write file
 	outfile := fmt.Sprintf("%s/%s_%s_%s.pdf", outputDir, emp.Name, emp.Month, emp.Year)

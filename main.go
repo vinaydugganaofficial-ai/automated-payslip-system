@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -16,6 +17,11 @@ import (
 )
 
 func main() {
+	// 0. Parse Flags
+	inputFlag := flag.String("input", "", "Path to input file (CSV or Excel)")
+	dryRunFlag := flag.Bool("dry-run", false, "Run without sending emails")
+	flag.Parse()
+
 	// 1. Load Configuration
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, relying on environment variables")
@@ -26,14 +32,16 @@ func main() {
 	senderEmail := os.Getenv("SMTP_EMAIL")
 	senderPassword := os.Getenv("SMTP_PASSWORD")
 
-	if senderEmail == "" || senderPassword == "" {
+	if !*dryRunFlag && (senderEmail == "" || senderPassword == "") {
 		log.Fatal("Error: SMTP_EMAIL and SMTP_PASSWORD must be set in .env")
 	}
 
 	// 2. Setup Directories
 	// Check for CSV first, default to Excel
 	inputFile := "employee_payslip_data_10_employees"
-	if _, err := os.Stat("employees.csv"); err == nil {
+	if *inputFlag != "" {
+		inputFile = *inputFlag
+	} else if _, err := os.Stat("employees.csv"); err == nil {
 		inputFile = "employees.csv"
 	}
 
@@ -63,13 +71,20 @@ func main() {
 	fmt.Printf("Found %d employees.\n", len(employees))
 
 	// 4. Setup SMTP Connection (Persistent)
-	d := gomail.NewDialer(smtpHost, smtpPort, senderEmail, senderPassword)
+	var d *gomail.Dialer
+	var s gomail.SendCloser
 
-	s, err := d.Dial()
-	if err != nil {
-		log.Fatalf("Failed to connect to SMTP server: %v", err)
+	if !*dryRunFlag {
+		d = gomail.NewDialer(smtpHost, smtpPort, senderEmail, senderPassword)
+
+		s, err = d.Dial()
+		if err != nil {
+			log.Fatalf("Failed to connect to SMTP server: %v", err)
+		}
+		defer s.Close()
+	} else {
+		fmt.Println("[DRY RUN] Skipping SMTP connection.")
 	}
-	defer s.Close()
 
 	// 5. Process Each Employee
 	for _, emp := range employees {
@@ -101,6 +116,11 @@ func main() {
 		// B. Send Email
 		if emp.Email == "" {
 			log.Printf("  [SKIP] No email address for %s\n", emp.Name)
+			continue
+		}
+
+		if *dryRunFlag {
+			fmt.Printf("  [DRY RUN] Email sending skipped for %s (%s)\n", emp.Name, emp.Email)
 			continue
 		}
 
