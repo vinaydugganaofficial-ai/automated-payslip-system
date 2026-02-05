@@ -1,11 +1,13 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"pay_slip_generator/pkg/calculator"
 	"pay_slip_generator/pkg/generator"
@@ -27,17 +29,32 @@ func main() {
 		log.Println("No .env file found, relying on environment variables")
 	}
 
-	smtpHost := "smtp.gmail.com"
-	smtpPort := 587
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPortStr := os.Getenv("SMTP_PORT")
 	senderEmail := os.Getenv("SMTP_EMAIL")
 	senderPassword := os.Getenv("SMTP_PASSWORD")
+	fromName := os.Getenv("SMTP_FROM_NAME")
+	if fromName == "" {
+		fromName = "HR Team"
+	}
 
-	if !*dryRunFlag && (senderEmail == "" || senderPassword == "") {
-		log.Fatal("Error: SMTP_EMAIL and SMTP_PASSWORD must be set in .env")
+	// In production, don't silently default to Gmail — force correct config.
+	if !*dryRunFlag {
+		if smtpHost == "" || smtpPortStr == "" || senderEmail == "" || senderPassword == "" {
+			log.Fatal("SMTP_HOST, SMTP_PORT, SMTP_EMAIL, SMTP_PASSWORD must be set in .env")
+		}
+	}
+
+	smtpPort := 587
+	if smtpPortStr != "" {
+		p, err := strconv.Atoi(smtpPortStr)
+		if err != nil {
+			log.Fatalf("Invalid SMTP_PORT=%q: %v", smtpPortStr, err)
+		}
+		smtpPort = p
 	}
 
 	// 2. Setup Directories
-	// Check for CSV first, default to Excel
 	inputFile := "employee_payslip_data_10_employees"
 	if *inputFlag != "" {
 		inputFile = *inputFlag
@@ -56,7 +73,6 @@ func main() {
 	var employees []model.Employee
 	var err error
 
-	// Check extension
 	if filepath.Ext(inputFile) == ".csv" {
 		employees, err = reader.ReadEmployeesFromCSV(inputFile)
 		if err != nil {
@@ -77,9 +93,19 @@ func main() {
 	if !*dryRunFlag {
 		d = gomail.NewDialer(smtpHost, smtpPort, senderEmail, senderPassword)
 
-		s, err = d.Dial()
+		// GoDaddy SMTP commonly uses implicit SSL on 465
+		if smtpPort == 465 {
+			d.SSL = true
+		}
+
+		// Helps TLS handshake on many servers
+		d.TLSConfig = &tls.Config{
+			ServerName: smtpHost,
+		}
+
+		s, err = d.Dial() // IMPORTANT: "=" not ":="
 		if err != nil {
-			log.Fatalf("Failed to connect to SMTP server: %v", err)
+			log.Fatalf("Failed to connect to SMTP server %s:%d: %v", smtpHost, smtpPort, err)
 		}
 		defer s.Close()
 	} else {
@@ -89,19 +115,14 @@ func main() {
 	// 5. Process Each Employee
 	for _, emp := range employees {
 		// --- Business Logic ---
-		// Default LOP
 		if emp.LOPDays == "" {
 			emp.LOPDays = "0"
 		}
 
-		// Calculate Tax (FY 25-26)
-		// We assume GrossEarnings is already populated by Reader (or calculated defaults)
 		emp.IncomeTax = calculator.CalculateMonthlyIncomeTax(emp.GrossEarnings)
-
-		// Recalculate Totals
 		emp.TotalDeductions = emp.ProfessionalTax + emp.PF + emp.IncomeTax
 		emp.NetPay = emp.GrossEarnings - emp.TotalDeductions
-		// ---------------------
+		// ----------------------
 
 		// A. Generate PDF
 		fmt.Printf("Processing %s (%s)...\n", emp.Name, emp.Email)
@@ -118,30 +139,35 @@ func main() {
 			log.Printf("  [SKIP] No email address for %s\n", emp.Name)
 			continue
 		}
-
 		if *dryRunFlag {
 			fmt.Printf("  [DRY RUN] Email sending skipped for %s (%s)\n", emp.Name, emp.Email)
 			continue
 		}
 
 		m := gomail.NewMessage()
-		m.SetHeader("From", senderEmail)
+		m.SetAddressHeader("From", senderEmail, fromName)
 		m.SetHeader("To", emp.Email)
 		m.SetHeader("Subject", fmt.Sprintf("Payslip for %s %s", emp.Month, emp.Year))
-		m.SetBody("text/plain", fmt.Sprintf("Dear %s,\n\nPlease find attached your payslip for %s %s.\n\nBest Regards,\nHR Team", emp.Name, emp.Month, emp.Year))
+		m.SetBody("text/plain",
+			fmt.Sprintf("Dear %s,\n\nPlease find attached your payslip for %s %s.\n\nBest Regards,\n%s",
+				emp.Name, emp.Month, emp.Year, fromName),
+		)
 		m.Attach(pdfPath)
 
 		// Send using the persistent connection
 		if err := gomail.Send(s, m); err != nil {
 			log.Printf("  [ERROR] Failed to send email to %s: %v\n", emp.Email, err)
+
 			// Simple retry logic: Re-dial if connection dropped
-			s.Close()
+			_ = s.Close()
 			if s, err = d.Dial(); err == nil {
 				if errRetry := gomail.Send(s, m); errRetry != nil {
 					log.Printf("  [ERROR] Retry failed for %s: %v\n", emp.Email, errRetry)
 				} else {
 					fmt.Printf("  [SUCCESS] Email sent to %s (Retry)\n", emp.Email)
 				}
+			} else {
+				log.Printf("  [ERROR] Reconnect failed: %v\n", err)
 			}
 		} else {
 			fmt.Printf("  [SUCCESS] Email sent to %s\n", emp.Email)
