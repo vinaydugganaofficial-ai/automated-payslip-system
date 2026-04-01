@@ -42,7 +42,6 @@ type Employee struct {
 	// Deductions
 	ProfessionalTax float64
 	PF              float64 // Provident Fund (if any)
-	IncomeTax       float64 // If any
 
 	// Totals
 	GrossEarnings   float64

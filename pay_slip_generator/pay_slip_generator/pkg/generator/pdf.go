@@ -10,10 +10,14 @@ import (
 )
 
 func getDaysInMonth(month, year string) int {
-	// Parse "Jan 2006"
-	t, err := time.Parse("Jan 2006", fmt.Sprintf("%s %s", month, year))
+	// Try parsing full month name first (e.g., "March 2024")
+	t, err := time.Parse("January 2006", fmt.Sprintf("%s %s", month, year))
 	if err != nil {
-		return 30 // Default fallback
+		// Fallback to abbreviated month name (e.g., "Mar 2024", "Feb 2024")
+		t, err = time.Parse("Jan 2006", fmt.Sprintf("%s %s", month, year))
+		if err != nil {
+			return 30 // Default fallback
+		}
 	}
 	// Go to the first day of the next month, then subtract one day to get the last day of the current month
 	return t.AddDate(0, 1, 0).Add(-24 * time.Hour).Day()
@@ -196,13 +200,7 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	drawRow("Basic Pay", emp.BasicPayRate, emp.BasicPayAmount, "Professional Tax", emp.ProfessionalTax)
 	drawRow("House Rent Allowance", emp.HRARate, emp.HRAAmount, "Provident Fund", emp.PF)
 
-	itLabel := ""
-	itAmt := 0.0
-	if emp.IncomeTax > 0 {
-		itLabel = "Income Tax"
-		itAmt = emp.IncomeTax
-	}
-	drawRow("Other Allowance", emp.OtherAllowanceRate, emp.OtherAllowanceAmount, itLabel, itAmt)
+	drawRow("Other Allowance", emp.OtherAllowanceRate, emp.OtherAllowanceAmount, "", 0.0)
 	// Empty rows
 	drawRow("", 0, 0, "", 0)
 	drawRow("", 0, 0, "", 0)

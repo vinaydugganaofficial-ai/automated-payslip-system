@@ -93,7 +93,6 @@ func ReadEmployeesFromCSV(filePath string) ([]model.Employee, error) {
 			// Deductions
 			ProfessionalTax: getFloat(row, "Professional Tax", "Prof Tax", "PT"),
 			PF:              getFloat(row, "PF", "Provident Fund"),
-			IncomeTax:       getFloat(row, "Income Tax", "IT", "TDS"),
 
 			// Totals
 			GrossEarnings:   getFloat(row, "Gross Earnings", "Gross Pay", "Total Earnings"),
@@ -106,7 +105,7 @@ func ReadEmployeesFromCSV(filePath string) ([]model.Employee, error) {
 			emp.GrossEarnings = emp.BasicPayAmount + emp.HRAAmount + emp.OtherAllowanceAmount
 		}
 		if emp.TotalDeductions == 0 {
-			emp.TotalDeductions = emp.ProfessionalTax + emp.PF + emp.IncomeTax
+			emp.TotalDeductions = emp.ProfessionalTax + emp.PF
 		}
 		if emp.NetPay == 0 {
 			emp.NetPay = emp.GrossEarnings - emp.TotalDeductions

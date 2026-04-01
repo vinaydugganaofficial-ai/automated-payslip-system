@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"pay_slip_generator/pkg/calculator"
 	"pay_slip_generator/pkg/generator"
 	"pay_slip_generator/pkg/model"
 	"pay_slip_generator/pkg/reader"
@@ -119,8 +118,7 @@ func main() {
 			emp.LOPDays = "0"
 		}
 
-		emp.IncomeTax = calculator.CalculateMonthlyIncomeTax(emp.GrossEarnings)
-		emp.TotalDeductions = emp.ProfessionalTax + emp.PF + emp.IncomeTax
+		emp.TotalDeductions = emp.ProfessionalTax + emp.PF
 		emp.NetPay = emp.GrossEarnings - emp.TotalDeductions
 		// ----------------------
 
