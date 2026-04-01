@@ -68,6 +68,14 @@ func ReadEmployees(filePath string) ([]model.Employee, error) {
 			continue
 		}
 
+		hasIncomeTax := false
+		for _, colName := range []string{"Income Tax", "TDS", "Tax"} {
+			if _, ok := headerMap[strings.ToLower(colName)]; ok {
+				hasIncomeTax = true
+				break
+			}
+		}
+
 		// We assume headers based on the screenshot fields
 		emp := model.Employee{
 			Month:       getVal(row, "Month"),
@@ -97,6 +105,8 @@ func ReadEmployees(filePath string) ([]model.Employee, error) {
 			// Deductions
 			ProfessionalTax: getFloat(row, "Professional Tax", "Prof Tax", "PT"),
 			PF:              getFloat(row, "PF", "Provident Fund"),
+			HasIncomeTax:    hasIncomeTax,
+			IncomeTax:       getFloat(row, "Income Tax", "TDS", "Tax"),
 
 			// Totals
 			GrossEarnings:   getFloat(row, "Gross Earnings", "Gross Pay", "Total Earnings"),
@@ -108,10 +118,15 @@ func ReadEmployees(filePath string) ([]model.Employee, error) {
 		if emp.GrossEarnings == 0 {
 			emp.GrossEarnings = emp.BasicPayAmount + emp.HRAAmount + emp.OtherAllowanceAmount
 		}
-		if emp.TotalDeductions == 0 {
-			emp.TotalDeductions = emp.ProfessionalTax + emp.PF
+		
+		// If total deductions are provided correctly in sheet, we use it. Otherwise compute it.
+		// Also forcibly add income tax if not already calculated (assuming Total Deductions in sheet might be missing TDS or we are calculating from scratch)
+		if emp.TotalDeductions == 0 || emp.TotalDeductions == (emp.ProfessionalTax+emp.PF) {
+			emp.TotalDeductions = emp.ProfessionalTax + emp.PF + emp.IncomeTax
 		}
-		if emp.NetPay == 0 {
+		
+		// Re-calculate net pay just in case TotalDeductions was updated
+		if emp.NetPay == 0 || emp.NetPay == (emp.GrossEarnings-(emp.TotalDeductions-emp.IncomeTax)) {
 			emp.NetPay = emp.GrossEarnings - emp.TotalDeductions
 		}
 

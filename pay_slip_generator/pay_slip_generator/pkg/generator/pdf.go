@@ -200,7 +200,11 @@ func GeneratePaySlip(emp model.Employee, outputDir string) error {
 	drawRow("Basic Pay", emp.BasicPayRate, emp.BasicPayAmount, "Professional Tax", emp.ProfessionalTax)
 	drawRow("House Rent Allowance", emp.HRARate, emp.HRAAmount, "Provident Fund", emp.PF)
 
-	drawRow("Other Allowance", emp.OtherAllowanceRate, emp.OtherAllowanceAmount, "", 0.0)
+	if emp.HasIncomeTax {
+		drawRow("Other Allowance", emp.OtherAllowanceRate, emp.OtherAllowanceAmount, "Income Tax", emp.IncomeTax)
+	} else {
+		drawRow("Other Allowance", emp.OtherAllowanceRate, emp.OtherAllowanceAmount, "", 0.0)
+	}
 	// Empty rows
 	drawRow("", 0, 0, "", 0)
 	drawRow("", 0, 0, "", 0)

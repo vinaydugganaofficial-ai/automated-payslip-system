@@ -65,6 +65,14 @@ func ReadEmployeesFromCSV(filePath string) ([]model.Employee, error) {
 			continue
 		}
 
+		hasIncomeTax := false
+		for _, colName := range []string{"Income Tax", "TDS", "Tax"} {
+			if _, ok := headerMap[strings.ToLower(colName)]; ok {
+				hasIncomeTax = true
+				break
+			}
+		}
+
 		emp := model.Employee{
 			Month:       getVal(row, "Month"),
 			Year:        getVal(row, "Year"),
@@ -93,6 +101,8 @@ func ReadEmployeesFromCSV(filePath string) ([]model.Employee, error) {
 			// Deductions
 			ProfessionalTax: getFloat(row, "Professional Tax", "Prof Tax", "PT"),
 			PF:              getFloat(row, "PF", "Provident Fund"),
+			HasIncomeTax:    hasIncomeTax,
+			IncomeTax:       getFloat(row, "Income Tax", "TDS", "Tax"),
 
 			// Totals
 			GrossEarnings:   getFloat(row, "Gross Earnings", "Gross Pay", "Total Earnings"),
@@ -104,10 +114,10 @@ func ReadEmployeesFromCSV(filePath string) ([]model.Employee, error) {
 		if emp.GrossEarnings == 0 {
 			emp.GrossEarnings = emp.BasicPayAmount + emp.HRAAmount + emp.OtherAllowanceAmount
 		}
-		if emp.TotalDeductions == 0 {
-			emp.TotalDeductions = emp.ProfessionalTax + emp.PF
+		if emp.TotalDeductions == 0 || emp.TotalDeductions == (emp.ProfessionalTax+emp.PF) {
+			emp.TotalDeductions = emp.ProfessionalTax + emp.PF + emp.IncomeTax
 		}
-		if emp.NetPay == 0 {
+		if emp.NetPay == 0 || emp.NetPay == (emp.GrossEarnings-(emp.TotalDeductions-emp.IncomeTax)) {
 			emp.NetPay = emp.GrossEarnings - emp.TotalDeductions
 		}
 
